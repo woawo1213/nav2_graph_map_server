@@ -21,7 +21,7 @@
 
 int main(int argc, char ** argv)
 {
-  std::string node_name("map_server");
+  std::string node_name("graph_map_server");
 
   rclcpp::init(argc, argv);
   auto node = std::make_shared<nav2_graph_map_server::MapServer>();

@@ -88,15 +88,7 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   std::string topic_name = get_parameter("topic_name").as_string();
   frame_id_ = get_parameter("frame_id").as_string();
 
-  // Shared pointer to LoadMap::Response is also should be initialized
-  // in order to avoid null-pointer dereference
-  // std::shared_ptr<nav2_msgs::srv::LoadMap::Response> rsp =
-    // std::make_shared<nav2_msgs::srv::LoadMap::Response>();
-
-  // if (!loadMapResponseFromYaml(yaml_filename, rsp)) {
-  //   throw std::runtime_error("Failed to load map yaml file: " + yaml_filename);
-  // }  
-  
+  // Load GraphMap form ymal
   YAML::Node config = YAML::LoadFile(yaml_filename);
 
   YAML::Node nodes = config["nodes"];
@@ -105,6 +97,7 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   msg_.header.frame_id = frame_id_;
   msg_.header.stamp = rclcpp::Clock().now();
 
+  // push the Node Info 
   for (int i = 0; i < (int)nodes.size(); i++) {
     wr_nav_msgs::msg::GraphNode node_msg;
 
@@ -126,6 +119,7 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     msg_.nodes.push_back(node_msg);
   }
 
+  // push the Edge Info
   for (int i = 0; i < (int)edges.size(); i++) {
     wr_nav_msgs::msg::GraphEdge edge_msg;
 
@@ -138,23 +132,10 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     msg_.edges.push_back(edge_msg);
   }
 
-//  // Make name prefix for services
-//  const std::string service_prefix = get_name() + std::string("/");
-//
-//  // Create a service that provides the occupancy grid
-//  occ_service_ = create_service<nav_msgs::srv::GetMap>(
-//    service_prefix + std::string(service_name_),
-//    std::bind(&MapServer::getMapCallback, this, _1, _2, _3));
-//
-//  // Create a publisher using the QoS settings to emulate a ROS1 latched topic
+  // Create a publisher for GraphMap.msg, sing the QoS settings to emulate a ROS1 latched topic
   graph_map_pub_ = create_publisher<wr_nav_msgs::msg::GraphMap>(
     topic_name,
     rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
-//
-//  // Create a service that loads the occupancy grid from a file
-//  load_map_service_ = create_service<nav2_msgs::srv::LoadMap>(
-//    service_prefix + std::string(load_map_service_name_),
-//    std::bind(&MapServer::loadMapCallback, this, _1, _2, _3));
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -204,76 +185,6 @@ MapServer::on_shutdown(const rclcpp_lifecycle::State & /*state*/)
   RCLCPP_INFO(get_logger(), "Shutting down");
   return nav2_util::CallbackReturn::SUCCESS;
 }
-
-
-
-//void MapServer::getMapCallback(
-//  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
-//  const std::shared_ptr<nav_msgs::srv::GetMap::Request>/*request*/,
-//  std::shared_ptr<nav_msgs::srv::GetMap::Response> response)
-//{
-////  // if not in ACTIVE state, ignore request
-////  if (get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
-////    RCLCPP_WARN(
-////      get_logger(),
-////      "Received GetMap request but not in ACTIVE state, ignoring!");
-////    return;
-////  }
-////  RCLCPP_INFO(get_logger(), "Handling GetMap request");
-////  response->map = msg_;
-//}
-//
-//void MapServer::loadMapCallback(
-//  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
-//  const std::shared_ptr<nav2_msgs::srv::LoadMap::Request> request,
-//  std::shared_ptr<nav2_msgs::srv::LoadMap::Response> response)
-//{
-////  // if not in ACTIVE state, ignore request
-////  if (get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
-////    RCLCPP_WARN(
-////      get_logger(),
-////      "Received LoadMap request but not in ACTIVE state, ignoring!");
-////    return;
-////  }
-////  RCLCPP_INFO(get_logger(), "Handling LoadMap request");
-////  // Load from file
-////  if (loadMapResponseFromYaml(request->map_url, response)) {
-////    auto occ_grid = std::make_unique<nav_msgs::msg::OccupancyGrid>(msg_);
-////    occ_pub_->publish(std::move(occ_grid));  // publish new map
-////  }
-//}
-//
-//bool MapServer::loadMapResponseFromYaml(
-//  const std::string & yaml_file,
-//  std::shared_ptr<nav2_msgs::srv::LoadMap::Response> response)
-//{
-////  switch (loadMapFromYaml(yaml_file, msg_)) {
-////    case MAP_DOES_NOT_EXIST:
-////      response->result = nav2_msgs::srv::LoadMap::Response::RESULT_MAP_DOES_NOT_EXIST;
-////      return false;
-////    case INVALID_MAP_METADATA:
-////      response->result = nav2_msgs::srv::LoadMap::Response::RESULT_INVALID_MAP_METADATA;
-////      return false;
-////    case INVALID_MAP_DATA:
-////      response->result = nav2_msgs::srv::LoadMap::Response::RESULT_INVALID_MAP_DATA;
-////      return false;
-////    case LOAD_MAP_SUCCESS:
-////      // Correcting msg_ header when it belongs to spiecific node
-////      updateMsgHeader();
-////
-////      response->map = msg_;
-////      response->result = nav2_msgs::srv::LoadMap::Response::RESULT_SUCCESS;
-////  }
-//
-//  return true;
-//}
-//
-//void MapServer::updateMsgHeader()
-//{
-////  msg_.info.map_load_time = now();
-////  msg_.header.frame_id = frame_id_;
-////  msg_.header.stamp = now();
-//}
 
 }  // namespace nav2_graph_map_server
 

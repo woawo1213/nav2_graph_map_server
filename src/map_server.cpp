@@ -43,6 +43,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+// modify by jmSHIN
 
 #include "nav2_graph_map_server/map_server.hpp"
 #include "graph_map_msgs/msg/graph_map.hpp"
@@ -88,7 +89,7 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   std::string topic_name = get_parameter("topic_name").as_string();
   frame_id_ = get_parameter("frame_id").as_string();
 
-  // Load GraphMap form ymal
+  // Read YAML file Info & Push the GraphMap.msg format
   YAML::Node config = YAML::LoadFile(yaml_filename);
 
   YAML::Node nodes = config["nodes"];
@@ -97,7 +98,7 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   msg_.header.frame_id = frame_id_;
   msg_.header.stamp = rclcpp::Clock().now();
 
-  // push the Node Info 
+  // push the Nodes Info 
   for (int i = 0; i < (int)nodes.size(); i++) {
     wr_nav_msgs::msg::GraphNode node_msg;
 
@@ -119,7 +120,7 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     msg_.nodes.push_back(node_msg);
   }
 
-  // push the Edge Info
+  // push the Edges Info
   for (int i = 0; i < (int)edges.size(); i++) {
     wr_nav_msgs::msg::GraphEdge edge_msg;
 
@@ -140,15 +141,15 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
-nnav2_util::CallbackReturn
+nav2_util::CallbackReturn
 MapServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Activating");
 
   // Publish the map using the latched topic
-  graph_map_pub_.headeron_activate();
-  auto graph_ = std::make_unique<wr_nav_msgs::msg::GraphMap>(msg_);
-  graph_map_pub_->publish(std::move(graph_));
+  graph_map_pub_->on_activate();
+  auto graph_map_ = std::make_unique<wr_nav_msgs::msg::GraphMap>(msg_);
+  graph_map_pub_->publish(std::move(graph_map_));
 
   // create bond connection
   createBond();
